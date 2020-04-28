@@ -35,17 +35,14 @@ namespace AElf.OS
             taskQueueManager.CreateQueue(OSConstants.BlockFetchQueueName, 4);
             taskQueueManager.CreateQueue(OSConstants.InitialSyncQueueName);
 
-            var backgroundWorkerManager = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
-            
             var networkOptions = context.ServiceProvider.GetService<IOptionsSnapshot<NetworkOptions>>().Value;
             if (networkOptions.EnablePeerDiscovery)
             {
-                var peerDiscoveryWorker = context.ServiceProvider.GetService<PeerDiscoveryWorker>();
-                backgroundWorkerManager.Add(peerDiscoveryWorker);
+                context.AddBackgroundWorker<PeerDiscoveryWorker>();
             }
 
-            backgroundWorkerManager.Add(context.ServiceProvider.GetService<BlockDownloadWorker>());
-            backgroundWorkerManager.Add(context.ServiceProvider.GetService<PeerReconnectionWorker>());
+            context.AddBackgroundWorker<BlockDownloadWorker>();
+            context.AddBackgroundWorker<PeerReconnectionWorker>();
         }
     }
 }
