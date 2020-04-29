@@ -263,6 +263,17 @@ namespace AElf.Contracts.Treasury
         {
             AssertPerformedByTreasuryController();
             Assert(input.Value.Contains(Context.Variables.NativeSymbol), "Need to contain native symbol.");
+            foreach (var symbol in input.Value.Where(s => s != Context.Variables.NativeSymbol))
+            {
+                var isTreasuryInWhiteList = State.TokenContract.IsInWhiteList.Call(new IsInWhiteListInput
+                {
+                    Symbol = symbol,
+                    Address = Context.Self
+                }).Value;
+                var tokenInfo = State.TokenContract.GetTokenInfo.Call(new GetTokenInfoInput {Symbol = symbol});
+                Assert(tokenInfo.IsProfitable || isTreasuryInWhiteList, "Symbol need to be profitable.");
+            }
+
             State.SymbolList.Value = input;
             return new Empty();
         }
@@ -299,6 +310,13 @@ namespace AElf.Contracts.Treasury
 
         private void ConvertToNativeToken(string symbol, long amount)
         {
+            State.TokenContract.Approve.Send(new ApproveInput
+            {
+                Spender = State.TokenConverterContract.Value,
+                Symbol = symbol,
+                Amount = amount
+            });
+
             State.TokenConverterContract.Sell.Send(new SellInput
             {
                 Symbol = symbol,
